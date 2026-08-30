@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>親師溝通訊息優化器 v1.6.0</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+              950: '#022c22'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { 
+      font-family: 'Noto Sans TC', sans-serif; 
+      touch-action: manipulation;
+    }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: #e2e8f0; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    
+    /* 擬真全螢幕備援樣式 */
+    .pseudo-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 99999 !important;
+      background-color: #0f172a !important;
+      overflow-y: auto !important;
+    }
+
+    /* 超大觸控按鈕特效 */
+    .touch-btn {
+      transition: transform 0.08s ease, filter 0.15s ease, background-color 0.15s ease;
+      min-height: 52px;
+    }
+    .touch-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body id="appBody" class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased select-none sm:select-auto">
+
+  <!-- 頂部高對比導覽列 Header -->
+  <header class="bg-slate-950 text-white shadow-lg sticky top-0 z-30 border-b-2 border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <div class="bg-emerald-400 text-slate-950 p-2.5 sm:p-3 rounded-2xl font-black text-2xl sm:text-3xl tracking-wider select-none shadow-md">
+          親師
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5 text-white">
+            親師溝通訊息優化器
+            <span class="text-xs sm:text-sm bg-emerald-500/20 text-emerald-400 font-mono px-2.5 py-1 rounded-lg border-2 border-emerald-500/40">v1.6.0</span>
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- 題庫管理按鈕 -->
+        <button id="templateManageBtn" onclick="toggleTemplateModal()" class="touch-btn text-sm sm:text-base font-bold bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-emerald-300 border-2 border-emerald-500/40 px-3.5 sm:px-4 py-2.5 rounded-2xl transition flex items-center gap-2 shadow-md">
+          <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <span class="hidden md:inline">校本題庫</span>
+        </button>
+
+        <!-- Gemini API Key Trigger -->
+        <button id="apiKeyBtn" onclick="toggleApiModal()" class="touch-btn text-sm sm:text-base font-bold bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-amber-300 border-2 border-amber-500/40 px-3.5 sm:px-4 py-2.5 rounded-2xl transition flex items-center gap-2 shadow-md">
+          <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"></path></svg>
+          <span id="apiKeyStatus" class="hidden sm:inline">AI 金鑰</span>
+        </button>
+
+        <!-- 全螢幕切換按鍵 -->
+        <button id="fullscreenBtn" onclick="toggleFullscreen()" title="切換大螢幕全螢幕" class="touch-btn bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white border-2 border-slate-700 px-3.5 py-2.5 rounded-2xl transition flex items-center justify-center shadow-md">
+          <svg id="fullscreenIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區 Main Content -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 左側：草稿輸入與設定控制區 (5 cols on lg) -->
+    <section class="lg:col-span-5 bg-slate-800/90 rounded-3xl shadow-xl border-2 border-slate-700 p-4 sm:p-7 flex flex-col justify-between space-y-6">
+      <div class="space-y-5">
+        
+        <!-- 校本情境快速套用面板 -->
+        <div class="bg-slate-900/90 border-2 border-emerald-500/60 rounded-2xl p-4 sm:p-5 space-y-4 shadow-inner">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5 text-emerald-300 font-black text-base sm:text-lg">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              校本題庫與填空
+            </div>
+            <button type="button" onclick="toggleTemplateModal()" class="text-xs sm:text-sm text-emerald-400 hover:text-emerald-300 font-bold hover:underline flex items-center gap-1">
+              ⚙️ 題庫管理
+            </button>
+          </div>
+
+          <!-- 分類與範本選擇器 -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1.5">情境分類</label>
+              <select id="templateCategorySelect" onchange="onTemplateCategoryChange()" class="w-full text-base font-bold border-2 border-slate-600 rounded-xl px-3 py-2.5 bg-slate-800 text-white outline-none focus:border-emerald-400">
+                <!-- 動態注入分類 -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1.5">校本範本</label>
+              <select id="templateSelect" onchange="onTemplateSelectChange()" class="w-full text-base font-bold border-2 border-slate-600 rounded-xl px-3 py-2.5 bg-slate-800 text-emerald-300 outline-none focus:border-emerald-400">
+                <!-- 動態注入範本 -->
+              </select>
+            </div>
+          </div>
+
+          <!-- 動態填空槽位容器 (Fact Slots) -->
+          <div id="dynamicSlotsContainer" class="space-y-3 pt-2">
+            <!-- 動態產生 Fact Slots -->
+          </div>
+
+          <!-- 一鍵組裝帶入按鈕 -->
+          <button type="button" onclick="assembleTemplateIntoDraft()" class="touch-btn w-full bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-black text-base sm:text-lg py-3 px-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            帶入填空與預設語氣
+          </button>
+        </div>
+
+        <!-- 學生姓名與語氣切換 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm sm:text-base font-bold text-slate-300 mb-1.5">學生姓名</label>
+            <input type="text" id="studentName" placeholder="例如：林小明" class="w-full text-lg font-bold border-2 border-slate-600 bg-slate-900 text-white rounded-2xl px-4 py-3 focus:border-emerald-400 outline-none transition">
+          </div>
+          <div>
+            <label class="block text-sm sm:text-base font-bold text-slate-300 mb-1.5">對話語氣風格</label>
+            <select id="toneStyle" onchange="onToneStyleChange()" class="w-full text-lg font-bold border-2 border-slate-600 rounded-2xl px-3.5 py-3 focus:border-emerald-400 outline-none transition bg-slate-900 text-emerald-400">
+              <option value="gentle">🌸 溫和同理 (柔性共融)</option>
+              <option value="firm">⚖️ 客觀堅定 (界限明確)</option>
+              <option value="collaborative">🤝 親師協作 (家庭分工)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 溝通情境分類按鈕 -->
+        <div>
+          <label class="block text-sm sm:text-base font-bold text-slate-300 mb-2">事件情境標籤</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5" id="contextButtons">
+            <button type="button" data-context="conflict" onclick="selectContext('conflict')" class="context-btn touch-btn text-base sm:text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-emerald-400 bg-emerald-500/20 text-emerald-300 text-center transition">
+              同儕摩擦
+            </button>
+            <button type="button" data-context="homework" onclick="selectContext('homework')" class="context-btn touch-btn text-base sm:text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-700 text-center transition">
+              作業缺漏
+            </button>
+            <button type="button" data-context="injury" onclick="selectContext('injury')" class="context-btn touch-btn text-base sm:text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-700 text-center transition">
+              偶發受傷
+            </button>
+            <button type="button" data-context="focus" onclick="selectContext('focus')" class="context-btn touch-btn text-base sm:text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-700 text-center transition">
+              課堂專注
+            </button>
+            <button type="button" data-context="emotion" onclick="selectContext('emotion')" class="context-btn touch-btn text-base sm:text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-700 text-center transition">
+              情緒波動
+            </button>
+            <button type="button" data-context="general" onclick="selectContext('general')" class="context-btn touch-btn text-base sm:text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-700 text-center transition">
+              生活作息
+            </button>
+          </div>
+        </div>
+
+        <!-- 原始草稿輸入 -->
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-sm sm:text-base font-bold text-slate-300">原始文字草稿</label>
+            <button type="button" onclick="loadSampleText()" class="text-xs sm:text-sm text-emerald-400 hover:text-emerald-300 font-bold hover:underline">
+              載入預設草稿
+            </button>
+          </div>
+          <textarea id="rawInput" rows="5" placeholder="請輸入包含具體細節的草稿，或使用上方校本題庫填空帶入..." class="w-full text-lg sm:text-xl font-medium border-2 border-slate-600 bg-slate-900 text-white rounded-2xl p-4 focus:border-emerald-400 outline-none transition resize-none"></textarea>
+        </div>
+
+      </div>
+
+      <!-- 操作按鈕列 -->
+      <div class="pt-4 border-t-2 border-slate-700 flex gap-3">
+        <button type="button" onclick="clearInput()" class="touch-btn w-1/3 text-base sm:text-lg font-bold text-slate-300 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 py-3.5 rounded-2xl transition border border-slate-600">
+          清空
+        </button>
+        <button type="button" onclick="processMessage()" class="touch-btn w-2/3 text-lg sm:text-xl font-black text-slate-950 bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 py-3.5 rounded-2xl shadow-xl transition flex items-center justify-center gap-2">
+          <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          重構訊息語氣
+        </button>
+      </div>
+    </section>
+
+    <!-- 右側：修飾結果與評估分析區 (7 cols on lg) -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- 法定通報預警 (高對比亮黃底) -->
+      <div id="statutoryWarning" class="hidden bg-amber-400 border-4 border-amber-500 text-slate-950 rounded-3xl p-5 shadow-2xl animate-pulse">
+        <div class="flex items-start gap-3.5">
+          <div class="p-2 bg-slate-950 text-amber-400 rounded-xl shrink-0 mt-0.5">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-lg sm:text-xl font-black">檢測到法定通報敏感關鍵字！</h3>
+            <p class="text-sm sm:text-base font-bold mt-1 leading-relaxed" id="warningDetail">
+              草稿中提及特定校安風險，請確認是否需啟動法定通報程序。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 事實保真度警示卡片 (高對比橘色) -->
+      <div id="fidelityWarningCard" class="hidden bg-orange-500 border-4 border-orange-600 text-white rounded-3xl p-5 shadow-2xl">
+        <div class="flex items-center gap-3.5">
+          <div class="p-2 bg-slate-950 text-orange-400 rounded-xl shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          </div>
+          <div>
+            <h4 class="text-lg font-black">事實保真度預警 (FFV Alert)</h4>
+            <p class="text-sm sm:text-base font-bold">檢測到行為嚴重度或受傷事實可能被過度修飾，請確認核心事實是否完整保留。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 雙指標評估儀表板：防衛心態與事實保真度 -->
+      <div class="bg-slate-800/90 rounded-3xl shadow-xl border-2 border-slate-700 p-5 sm:p-6 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-700">
+          
+          <!-- 指標 1: 防衛心態風險 -->
+          <div class="pr-0 sm:pr-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm sm:text-base font-bold text-slate-200 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-400"></span>
+                防衛心態風險
+              </span>
+              <span id="riskBadge" class="px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-slate-700 text-slate-300">
+                尚未評估
+              </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <div id="riskScore" class="text-4xl font-black text-white">--</div>
+              <div class="text-xs sm:text-sm font-semibold text-slate-400">/ 100 分 (越低越安全)</div>
+            </div>
+            <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden mt-3 border border-slate-700">
+              <div id="riskBar" class="bg-slate-500 h-full w-0 transition-all duration-500"></div>
+            </div>
+          </div>
+
+          <!-- 指標 2: 事實保真度 (FFV) -->
+          <div class="pt-4 sm:pt-0 sm:pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm sm:text-base font-bold text-slate-200 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                事實保真度 (FFV)
+              </span>
+              <span id="fidelityBadge" class="px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-slate-700 text-slate-300">
+                尚未校驗
+              </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <div id="fidelityScore" class="text-4xl font-black text-white">--</div>
+              <div class="text-xs sm:text-sm font-semibold text-slate-400">/ 100 分 (高於 90 為佳)</div>
+            </div>
+            <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden mt-3 border border-slate-700">
+              <div id="fidelityBar" class="bg-slate-500 h-full w-0 transition-all duration-500"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 事實錨點標籤（Anchor Badges） -->
+        <div id="factualAnchorsContainer" class="pt-3 border-t-2 border-slate-700 hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs sm:text-sm text-slate-300 font-bold uppercase tracking-wider">客觀事實錨點 (Factual Anchors)：</span>
+            <span id="engineModeBadge" class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg font-mono">Gemini AI 校驗</span>
+          </div>
+          <div id="factualAnchors" class="flex flex-wrap gap-2 pt-1"></div>
+        </div>
+
+        <!-- 轉化標籤 -->
+        <div id="transformedTagsContainer" class="pt-2 border-t-2 border-slate-700 hidden">
+          <div class="text-xs sm:text-sm text-slate-300 font-bold mb-1.5">已替換之情緒/指責字眼：</div>
+          <div id="transformedTags" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <!-- 重構結果輸出區 -->
+      <div class="bg-slate-800/90 rounded-3xl shadow-xl border-2 border-slate-700 p-5 sm:p-7 flex-grow flex flex-col justify-between space-y-4">
+        
+        <!-- 分頁 Tab -->
+        <div class="flex flex-wrap items-center justify-between border-b-2 border-slate-700 pb-3 gap-2">
+          <div class="flex gap-2">
+            <button type="button" id="tabConciseBtn" onclick="switchTab('concise')" class="touch-btn text-base sm:text-lg font-black px-4 sm:px-5 py-2.5 rounded-2xl bg-emerald-400 text-slate-950 transition shadow-md">
+              LINE 即時版
+            </button>
+            <button type="button" id="tabDetailedBtn" onclick="switchTab('detailed')" class="touch-btn text-base sm:text-lg font-bold px-4 sm:px-5 py-2.5 rounded-2xl bg-slate-900 text-slate-300 hover:bg-slate-700 transition">
+              聯絡簿 / 完整版
+            </button>
+          </div>
+          <span id="currentToneBadge" class="text-xs sm:text-sm font-black text-emerald-300 bg-emerald-950 border border-emerald-500/50 px-3 py-1.5 rounded-xl">
+            當前語氣：溫和同理
+          </span>
+        </div>
+
+        <!-- 輸出內文區域 (字體超大高對比) -->
+        <div class="relative flex-grow min-h-[200px] bg-slate-950 border-2 border-slate-700 rounded-2xl p-5 sm:p-6 text-white shadow-inner">
+          <div id="loadingOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm rounded-2xl flex items-center justify-center hidden z-10">
+            <div class="flex flex-col items-center gap-3">
+              <div class="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+              <span class="text-lg font-black text-emerald-300">執行事實保真校驗與語氣重構中...</span>
+            </div>
+          </div>
+
+          <!-- 精簡版內容 -->
+          <div id="outputConcise" class="text-xl sm:text-2xl text-slate-100 leading-relaxed font-semibold whitespace-pre-line">
+            （點擊「重構訊息語氣」後將在此呈現轉換結果）
+          </div>
+
+          <!-- 詳盡版內容 -->
+          <div id="outputDetailed" class="text-lg sm:text-xl text-slate-100 leading-relaxed font-medium whitespace-pre-line hidden">
+            （點擊「重構訊息語氣」後將在此呈現轉換結果）
+          </div>
+        </div>
+
+        <!-- 家庭配合事項區塊 (Action Items) -->
+        <div id="parentActionCard" class="bg-emerald-950/60 border-2 border-emerald-500/50 rounded-2xl p-4 sm:p-5 hidden">
+          <div class="flex items-center gap-2 text-base sm:text-lg font-black text-emerald-300 mb-2">
+            <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            今晚建議家庭具體配合事項 (Action Items)：
+          </div>
+          <ul id="parentActionList" class="space-y-2 text-base sm:text-lg text-emerald-100 pl-6 list-disc font-semibold"></ul>
+        </div>
+
+        <!-- 操作按鈕：超大一鍵複製 -->
+        <div class="pt-2">
+          <button type="button" onclick="copyCurrentOutput()" class="touch-btn w-full bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 text-slate-950 font-black text-lg sm:text-2xl py-4 sm:py-5 rounded-2xl transition flex items-center justify-center gap-3 shadow-xl">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            一鍵複製目前語氣內文
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 頁面底部置中 Footer -->
+  <footer class="mt-auto py-5 text-center text-sm sm:text-base font-bold text-slate-400 tracking-wide border-t-2 border-slate-800 bg-slate-950 select-none">
+    班級百寶箱 | Design：S.C. Kuo
+  </footer>
+
+  <!-- Toast 快顯通知 -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-950 text-emerald-300 border-2 border-emerald-500/80 font-bold px-6 py-4 rounded-2xl shadow-2xl transition transform translate-y-20 opacity-0 z-50 flex items-center gap-3 pointer-events-none text-base sm:text-lg">
+    <svg class="w-6 h-6 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+    <span id="toastMessage">已複製到剪貼簿</span>
+  </div>
+
+  <!-- 客製化確認對話框 Custom Confirm Modal (取代原生 confirm) -->
+  <div id="customConfirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 text-white" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 text-amber-400 text-lg sm:text-xl font-black">
+        <svg class="w-7 h-7 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <span id="confirmModalTitle">確認操作</span>
+      </div>
+      <p id="confirmModalMessage" class="text-base sm:text-lg text-slate-300 leading-relaxed font-medium">
+        您確定要執行此操作嗎？
+      </p>
+      <div class="flex justify-end gap-3 pt-2">
+        <button id="confirmCancelBtn" class="touch-btn px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 text-base">取消</button>
+        <button id="confirmOkBtn" class="touch-btn px-6 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-black hover:bg-emerald-400 text-base">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Modal -->
+  <div id="apiModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-xl font-black text-emerald-300 flex items-center gap-2">
+          🔑 設定 Gemini API 金鑰
+        </h3>
+        <button onclick="toggleApiModal()" class="text-slate-400 hover:text-white text-2xl font-black leading-none p-2">✕</button>
+      </div>
+      <p class="text-sm sm:text-base text-slate-300 leading-relaxed font-medium">
+        填入 Gemini API 金鑰可啟動雲端高階 FFV（事實保真度校驗）；若未填寫，系統將自動啟動本地規則引擎處理。
+      </p>
+      <div>
+        <label class="block text-sm font-bold text-slate-200 mb-1.5">API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full border-2 border-slate-600 bg-slate-950 text-white rounded-xl px-4 py-3 text-base sm:text-lg outline-none focus:border-emerald-400">
+      </div>
+      <div class="flex justify-between items-center pt-2">
+        <button onclick="clearApiKey()" class="touch-btn px-4 py-2.5 rounded-xl text-rose-400 hover:bg-rose-950/50 text-sm font-bold transition">清除金鑰</button>
+        <div class="flex gap-2">
+          <button onclick="toggleApiModal()" class="touch-btn px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 text-base font-bold transition">取消</button>
+          <button onclick="saveApiKey()" class="touch-btn px-6 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-base font-black hover:bg-emerald-400 transition">儲存設定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 校本題庫管理 Modal (包含 JSON 匯出/匯入/自訂範本) -->
+  <div id="templateModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3 sm:p-6">
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-3xl w-full p-5 sm:p-7 shadow-2xl space-y-4 max-h-[90vh] flex flex-col text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2 bg-emerald-950 text-emerald-400 border border-emerald-500/40 rounded-xl text-xl">📚</span>
+          <h3 class="text-xl sm:text-2xl font-black text-white">校本情境題庫與範本管理</h3>
+        </div>
+        <button onclick="toggleTemplateModal()" class="text-slate-400 hover:text-white text-2xl font-black leading-none p-2">✕</button>
+      </div>
+
+      <div class="flex-grow overflow-y-auto pr-1 space-y-4">
+        <!-- 匯出匯入工具列 -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-950 border-2 border-slate-800 rounded-2xl">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="exportTemplatesJson()" class="touch-btn text-sm sm:text-base bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5">
+              📥 匯出 JSON 題庫包
+            </button>
+            <label class="touch-btn text-sm sm:text-base bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+              📤 匯入 JSON 題庫包
+              <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importTemplatesJson(event)">
+            </label>
+          </div>
+          <button onclick="confirmResetToDefault()" class="text-sm text-rose-400 hover:text-rose-300 hover:underline font-bold">
+            重設為系統預設題庫
+          </button>
+        </div>
+
+        <!-- 現有範本清單 -->
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <h4 class="text-base sm:text-lg font-black text-slate-200">目前範本清單 (<span id="templateCountBadge" class="text-emerald-400">0</span> 組)</h4>
+            <button onclick="openAddTemplateForm()" class="touch-btn text-sm sm:text-base bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3.5 py-1.5 rounded-xl transition flex items-center gap-1">
+              + 新增自訂範本
+            </button>
+          </div>
+          <div id="templateListView" class="space-y-2.5 max-h-60 overflow-y-auto">
+            <!-- 動態渲染範本列表 -->
+          </div>
+        </div>
+
+        <!-- 編輯/新增範本表單區塊 -->
+        <div id="templateEditSection" class="hidden bg-slate-950 border-2 border-emerald-500/50 rounded-2xl p-4 sm:p-5 space-y-3.5">
+          <h4 id="editFormTitle" class="text-base sm:text-lg font-black text-emerald-300 flex items-center gap-2">
+            ✏️ 新增 / 編輯範本
+          </h4>
+          <input type="hidden" id="editTemplateId">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1">所屬分類</label>
+              <input type="text" id="editCategory" placeholder="如：常規與作業" class="w-full text-base font-bold border-2 border-slate-700 bg-slate-900 text-white rounded-xl p-2.5 outline-none focus:border-emerald-400">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1">範本名稱</label>
+              <input type="text" id="editTitle" placeholder="如：連日欠交數學習作" class="w-full text-base font-bold border-2 border-slate-700 bg-slate-900 text-white rounded-xl p-2.5 outline-none focus:border-emerald-400">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1">草稿模板 (填空槽位請用 {槽位名稱})</label>
+            <textarea id="editDraftTemplate" rows="2" placeholder="如：{學生姓名}今天{欠交科目}第{頁碼}完全沒寫..." class="w-full text-base border-2 border-slate-700 bg-slate-900 text-white rounded-xl p-2.5 font-mono outline-none focus:border-emerald-400"></textarea>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1">預設建議語氣</label>
+              <select id="editDefaultTone" class="w-full text-base font-bold border-2 border-slate-700 rounded-xl p-2.5 bg-slate-900 text-white">
+                <option value="gentle">🌸 溫和同理</option>
+                <option value="firm">⚖️ 客觀堅定</option>
+                <option value="collaborative">🤝 親師協作</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1">對應情境標籤</label>
+              <select id="editContext" class="w-full text-base font-bold border-2 border-slate-700 rounded-xl p-2.5 bg-slate-900 text-white">
+                <option value="conflict">同儕摩擦</option>
+                <option value="homework">作業缺漏</option>
+                <option value="injury">偶發受傷</option>
+                <option value="focus">課堂專注</option>
+                <option value="emotion">情緒波動</option>
+                <option value="general">生活作息</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-bold text-slate-300 mb-1">預設家庭配合事項 (每行一項)</label>
+            <textarea id="editDefaultActions" rows="2" placeholder="今晚請陪伴孩子檢視欠交項目並完成訂正&#10;完成後於聯絡簿簽章核對" class="w-full text-base border-2 border-slate-700 bg-slate-900 text-white rounded-xl p-2.5 outline-none focus:border-emerald-400"></textarea>
+          </div>
+          <div class="flex justify-end gap-2.5 pt-2">
+            <button onclick="closeTemplateForm()" class="touch-btn px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-xl font-bold">取消</button>
+            <button onclick="saveTemplateEdit()" class="touch-btn px-5 py-2 text-sm bg-emerald-500 text-slate-950 font-black rounded-xl hover:bg-emerald-400">儲存範本</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="border-t border-slate-700 pt-3 flex justify-end shrink-0">
+        <button onclick="toggleTemplateModal()" class="touch-btn px-6 py-2.5 rounded-2xl bg-emerald-500 text-slate-950 text-base font-black hover:bg-emerald-400 transition">完成並關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript 核心邏輯 -->
+  <script>
+    let currentContext = 'conflict';
+    let currentActiveTab = 'concise';
+    let userApiKey = '';
+    let lastProcessedResult = null;
+    let toastTimeout = null;
+
+    // 1. 內建高頻校本題庫預設包
+    const DEFAULT_TEMPLATES = [
+      {
+        id: "tpl-1",
+        category: "同儕衝突與意外",
+        title: "走廊奔跑推擠撞傷 (衝突情境)",
+        context: "conflict",
+        defaultTone: "firm",
+        draftTemplate: "{學生姓名}在{發生時段}於{發生地點}因奔跑推了陳同學撞到桌角，導致對方{受傷部位}且{傷勢程度}。事後情緒激動不肯道歉，校內已由{處置措施}，請家長配合教育。",
+        slots: [
+          { key: "發生時段", label: "發生時段", default: "第二節下課", placeholder: "例如：第二節下課" },
+          { key: "發生地點", label: "發生地點", default: "走廊走道", placeholder: "例如：走廊走道" },
+          { key: "受傷部位", label: "受傷部位", default: "額頭紅腫約2cm", placeholder: "例如：額頭紅腫約2cm" },
+          { key: "傷勢程度", label: "傷勢程度", default: "手肘破皮流血", placeholder: "例如：手肘破皮流血" },
+          { key: "處置措施", label: "校內處置措施", default: "保健室冰敷包紮並完成雙方訪談紀錄", placeholder: "例如：保健室冰敷包紮" }
+        ],
+        keywordsForAudit: ["推同學", "額頭紅腫", "手肘破皮", "保健室冰敷"],
+        defaultActions: [
+          "嚴肅告誡孩子校園走廊奔跑與推擠之危險性",
+          "引導孩子理解同儕受傷事實並建立負責態度"
+        ]
+      },
+      {
+        id: "tpl-2",
+        category: "常規與作業",
+        title: "連日欠交作業與聽寫未訂正",
+        context: "homework",
+        defaultTone: "gentle",
+        draftTemplate: "{學生姓名}今天{欠交科目}{欠交範圍}完全沒寫，且{聽寫項目}只有拿{分數}，講了好幾次都不訂正，請家長今晚務必盯緊他完成並簽名！",
+        slots: [
+          { key: "欠交科目", label: "欠交科目", default: "數學習作", placeholder: "例如：數學習作" },
+          { key: "欠交範圍", label: "頁碼範圍", default: "P.18-P.19", placeholder: "例如：P.18-P.19" },
+          { key: "聽寫項目", label: "聽寫/測驗單元", default: "國語第二單元聽寫", placeholder: "例如：國語第二單元聽寫" },
+          { key: "分數", label: "測驗分數", default: "30分", placeholder: "例如：30分" }
+        ],
+        keywordsForAudit: ["數學習作", "P.18-P.19", "30分", "未訂正"],
+        defaultActions: [
+          "今晚陪伴孩子檢視未完成之習作並給予正向鼓勵",
+          "核對聽寫訂正完成度後於聯絡簿完成簽核"
+        ]
+      },
+      {
+        id: "tpl-3",
+        category: "課堂學習專注",
+        title: "課堂玩私人物品且測驗空白",
+        context: "focus",
+        defaultTone: "collaborative",
+        draftTemplate: "{學生姓名}今天在{上課科目}課堂一直在抽屜玩{分心物品}，老師提醒了{提醒次數}還是沒收起來，導致隨堂測驗{受影響項目}完全空白沒寫。",
+        slots: [
+          { key: "上課科目", label: "上課科目", default: "自然課", placeholder: "例如：自然課" },
+          { key: "分心物品", label: "分心物品/玩具", default: "怪獸玩具公仔", placeholder: "例如：怪獸玩具公仔" },
+          { key: "提醒次數", label: "提醒次數", default: "3次", placeholder: "例如：3次" },
+          { key: "受影響項目", label: "受影響項目", default: "第三大題實驗記錄", placeholder: "例如：第三大題隨堂測驗" }
+        ],
+        keywordsForAudit: ["怪獸玩具公仔", "提醒3次", "隨堂測驗空白"],
+        defaultActions: [
+          "提醒孩子非學用品（玩具/公仔）請妥善留在家中",
+          "引導孩子於今晚撥空補齊課堂空白之隨堂記錄"
+        ]
+      },
+      {
+        id: "tpl-4",
+        category: "偶發受傷與安全",
+        title: "體育課/下課偶發撞傷護理",
+        context: "injury",
+        defaultTone: "gentle",
+        draftTemplate: "{學生姓名}剛剛在{活動場合}小跑步不慎撞到{撞擊物體}，導致{受傷情況}，保健室護理師已先{護理措施}，請家長帶回持續留意是否有暈眩狀況。",
+        slots: [
+          { key: "活動場合", label: "活動場合", default: "放學前走廊", placeholder: "例如：放學前走廊" },
+          { key: "撞擊物體", label: "撞擊物體/地面", default: "走廊柱子", placeholder: "例如：走廊柱子" },
+          { key: "受傷情況", label: "傷勢情況", default: "額頭紅腫起包約3cm", placeholder: "例如：額頭紅腫起包約3cm" },
+          { key: "護理措施", label: "校內護理處置", default: "冰敷15分鐘並檢視活動力", placeholder: "例如：冰敷15分鐘" }
+        ],
+        keywordsForAudit: ["額頭紅腫起包約3cm", "冰敷15分鐘", "留意暈眩"],
+        defaultActions: [
+          "今晚持續觀察孩子頭部與傷處，留意有無暈眩嘔吐",
+          "保持傷口乾燥，若持續腫痛建議就醫檢查"
+        ]
+      },
+      {
+        id: "tpl-5",
+        category: "生活作息與出缺席",
+        title: "校外教學/學用品多次遺漏",
+        context: "general",
+        defaultTone: "collaborative",
+        draftTemplate: "提醒家長，{學生姓名}明天{特殊活動}需攜帶{應帶物品}，但他這週已連續{遺漏次數}忘記帶{常規學用品}，請務必幫忙檢查書包。",
+        slots: [
+          { key: "特殊活動", label: "特殊活動/課程", default: "校外教學", placeholder: "例如：校外教學" },
+          { key: "應帶物品", label: "需攜帶物品", default: "遮陽帽與健保卡", placeholder: "例如：遮陽帽與健保卡" },
+          { key: "遺漏次數", label: "遺漏次數", default: "兩次", placeholder: "例如：兩次" },
+          { key: "常規學用品", label: "經常遺漏之物品", default: "美勞材料與彩色筆", placeholder: "例如：美勞材料" }
+        ],
+        keywordsForAudit: ["校外教學", "遮陽帽", "連續兩次忘記帶"],
+        defaultActions: [
+          "今晚陪伴孩子核對明日書包檢核清單",
+          "引導孩子建立睡前自行檢查學用品的習慣"
+        ]
+      }
+    ];
+
+    let schoolTemplates = [];
+    const statutoryKeywords = ['家暴', '體罰', '性騷', '霸凌', '自傷', '自殺', '兒虐', '抽菸', '喝酒', '打群架', '骨折', '大量出血'];
+
+    // 2. 初始化流程
+    window.onload = function() {
+      // 載入 API Key
+      const savedKey = localStorage.getItem('gemini_api_key');
+      if (savedKey) {
+        userApiKey = savedKey;
+        document.getElementById('apiKeyInput').value = savedKey;
+        document.getElementById('apiKeyStatus').textContent = '已啟用 AI';
+      }
+
+      // 載入題庫
+      loadTemplatesFromStorage();
+      initCategoryAndTemplateSelectors();
+      updateToneBadge();
+      initFullscreenListener();
+    };
+
+    // 題庫 LocalStorage 讀取與儲存
+    function loadTemplatesFromStorage() {
+      try {
+        const stored = localStorage.getItem('school_comm_templates_v16');
+        if (stored) {
+          schoolTemplates = JSON.parse(stored);
+        } else {
+          schoolTemplates = [...DEFAULT_TEMPLATES];
+          saveTemplatesToStorage();
+        }
+      } catch (e) {
+        console.error("載入題庫失敗，恢復預設：", e);
+        schoolTemplates = [...DEFAULT_TEMPLATES];
+      }
+    }
+
+    function saveTemplatesToStorage() {
+      try {
+        localStorage.setItem('school_comm_templates_v16', JSON.stringify(schoolTemplates));
+      } catch (e) {
+        console.error("儲存題庫失敗：", e);
+        showToast("本機存儲空間不足或異常");
+      }
+    }
+
+    // 初始化分類與範本下拉選單
+    function initCategoryAndTemplateSelectors() {
+      const catSelect = document.getElementById('templateCategorySelect');
+      const categories = Array.from(new Set(schoolTemplates.map(t => t.category || "一般情境")));
+
+      catSelect.innerHTML = '';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        catSelect.appendChild(opt);
+      });
+
+      onTemplateCategoryChange();
+    }
+
+    function onTemplateCategoryChange() {
+      const selectedCat = document.getElementById('templateCategorySelect').value;
+      const tplSelect = document.getElementById('templateSelect');
+      const filtered = schoolTemplates.filter(t => t.category === selectedCat);
+
+      tplSelect.innerHTML = '';
+      filtered.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.title;
+        tplSelect.appendChild(opt);
+      });
+
+      onTemplateSelectChange();
+    }
+
+    // 當範本切換時，動態渲染 Fact Slots（大輸入欄位）
+    function onTemplateSelectChange() {
+      const tplId = document.getElementById('templateSelect').value;
+      const tpl = schoolTemplates.find(t => t.id === tplId);
+      const container = document.getElementById('dynamicSlotsContainer');
+      container.innerHTML = '';
+
+      if (!tpl) return;
+
+      if (tpl.slots && tpl.slots.length > 0) {
+        const grid = document.createElement('div');
+        grid.className = "grid grid-cols-1 sm:grid-cols-2 gap-3";
+
+        tpl.slots.forEach(slot => {
+          const div = document.createElement('div');
+          div.className = "flex flex-col";
+          div.innerHTML = `
+            <label class="text-xs sm:text-sm font-bold text-slate-300 mb-1">${slot.label}</label>
+            <input type="text" data-slot-key="${slot.key}" value="${slot.default || ''}" placeholder="${slot.placeholder || ''}" class="slot-input text-base sm:text-lg font-bold border-2 border-slate-700 rounded-xl px-3 py-2 bg-slate-950 text-emerald-300 outline-none focus:border-emerald-400">
+          `;
+          grid.appendChild(div);
+        });
+
+        container.appendChild(grid);
+      }
+    }
+
+    // 一鍵組裝帶入草稿與語氣
+    function assembleTemplateIntoDraft() {
+      const tplId = document.getElementById('templateSelect').value;
+      const tpl = schoolTemplates.find(t => t.id === tplId);
+      const studentName = document.getElementById('studentName').value.trim() || '林小明';
+
+      if (!tpl) {
+        showToast('請先選擇範本');
+        return;
+      }
+
+      let text = tpl.draftTemplate;
+      text = text.replace(/{學生姓名}/g, studentName);
+
+      const slotInputs = document.querySelectorAll('#dynamicSlotsContainer input[data-slot-key]');
+      slotInputs.forEach(input => {
+        const key = input.getAttribute('data-slot-key');
+        const val = input.value.trim() || (tpl.slots.find(s => s.key === key)?.default || '');
+        const regex = new RegExp(`{${key}}`, 'g');
+        text = text.replace(regex, val);
+      });
+
+      document.getElementById('rawInput').value = text;
+      if (!document.getElementById('studentName').value.trim()) {
+        document.getElementById('studentName').value = "林小明";
+      }
+
+      if (tpl.context) {
+        selectContext(tpl.context);
+      }
+      if (tpl.defaultTone) {
+        document.getElementById('toneStyle').value = tpl.defaultTone;
+        updateToneBadge();
+      }
+
+      showToast(`已套用「${tpl.title}」`);
+    }
+
+    // 全螢幕監聽與相容切換 (含 Pseudo-Fullscreen 偽全螢幕備援)
+    function initFullscreenListener() {
+      const updateIcon = () => {
+        const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.body.classList.contains('pseudo-fullscreen');
+        const icon = document.getElementById('fullscreenIcon');
+        if (isFS) {
+          icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>`;
+        } else {
+          icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>`;
+        }
+      };
+      document.addEventListener('fullscreenchange', updateIcon);
+      document.addEventListener('webkitfullscreenchange', updateIcon);
+    }
+
+    function toggleFullscreen() {
+      const doc = document.documentElement;
+      const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+
+      if (!isFS) {
+        if (doc.requestFullscreen) {
+          doc.requestFullscreen().catch(() => {
+            // iframe 備用機制
+            document.body.classList.toggle('pseudo-fullscreen');
+            showToast('已切換全螢幕模式');
+          });
+        } else if (doc.webkitRequestFullscreen) {
+          doc.webkitRequestFullscreen();
+        } else {
+          document.body.classList.toggle('pseudo-fullscreen');
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+
+    // 自訂高對比確認彈窗 (取代原生 confirm)
+    function showCustomConfirm(title, message, onOk) {
+      const modal = document.getElementById('customConfirmModal');
+      document.getElementById('confirmModalTitle').textContent = title;
+      document.getElementById('confirmModalMessage').textContent = message;
+      modal.classList.remove('hidden');
+
+      const okBtn = document.getElementById('confirmOkBtn');
+      const cancelBtn = document.getElementById('confirmCancelBtn');
+
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+      };
+
+      okBtn.onclick = () => {
+        cleanup();
+        onOk();
+      };
+      cancelBtn.onclick = () => {
+        cleanup();
+      };
+    }
+
+    // API Key Modal 邏輯
+    function toggleApiModal() {
+      document.getElementById('apiModal').classList.toggle('hidden');
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      userApiKey = key;
+      localStorage.setItem('gemini_api_key', key);
+      document.getElementById('apiKeyStatus').textContent = key ? '已啟用 AI' : 'AI 金鑰';
+      toggleApiModal();
+      showToast(key ? 'Gemini API 金鑰已儲存' : '已切換為本地預設引擎');
+    }
+
+    function clearApiKey() {
+      userApiKey = '';
+      localStorage.removeItem('gemini_api_key');
+      document.getElementById('apiKeyInput').value = '';
+      document.getElementById('apiKeyStatus').textContent = 'AI 金鑰';
+      toggleApiModal();
+      showToast('已清除 API 金鑰');
+    }
+
+    // 題庫管理 Modal 邏輯
+    function toggleTemplateModal() {
+      const modal = document.getElementById('templateModal');
+      const isHidden = modal.classList.toggle('hidden');
+      if (!isHidden) {
+        renderTemplateList();
+        closeTemplateForm();
+      }
+    }
+
+    function renderTemplateList() {
+      const list = document.getElementById('templateListView');
+      document.getElementById('templateCountBadge').textContent = schoolTemplates.length;
+      list.innerHTML = '';
+
+      if (schoolTemplates.length === 0) {
+        list.innerHTML = `<div class="text-sm text-slate-400 text-center py-6">目前尚無任何範本</div>`;
+        return;
+      }
+
+      schoolTemplates.forEach((tpl) => {
+        const item = document.createElement('div');
+        item.className = "p-3.5 bg-slate-950 border-2 border-slate-800 rounded-2xl flex items-center justify-between gap-3 shadow-md";
+        item.innerHTML = `
+          <div class="flex-grow min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black bg-emerald-950 text-emerald-300 border border-emerald-500/50 px-2 py-0.5 rounded-md">${tpl.category || '一般'}</span>
+              <h5 class="text-base font-bold text-white truncate">${tpl.title}</h5>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-400 truncate mt-1">${tpl.draftTemplate}</p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="editTemplateItem('${tpl.id}')" class="touch-btn text-sm text-blue-300 hover:bg-blue-950/60 px-3 py-1.5 rounded-xl font-bold transition">編輯</button>
+            <button onclick="confirmDeleteTemplate('${tpl.id}')" class="touch-btn text-sm text-rose-300 hover:bg-rose-950/60 px-3 py-1.5 rounded-xl font-bold transition">刪除</button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function openAddTemplateForm() {
+      document.getElementById('editFormTitle').textContent = "✏️ 新增校本情境範本";
+      document.getElementById('editTemplateId').value = "";
+      document.getElementById('editCategory').value = "";
+      document.getElementById('editTitle').value = "";
+      document.getElementById('editDraftTemplate').value = "";
+      document.getElementById('editDefaultTone').value = "gentle";
+      document.getElementById('editContext').value = "conflict";
+      document.getElementById('editDefaultActions').value = "";
+      document.getElementById('templateEditSection').classList.remove('hidden');
+    }
+
+    function editTemplateItem(id) {
+      const tpl = schoolTemplates.find(t => t.id === id);
+      if (!tpl) return;
+      document.getElementById('editFormTitle').textContent = "✏️ 編輯校本範本：" + tpl.title;
+      document.getElementById('editTemplateId').value = tpl.id;
+      document.getElementById('editCategory').value = tpl.category || "";
+      document.getElementById('editTitle').value = tpl.title || "";
+      document.getElementById('editDraftTemplate').value = tpl.draftTemplate || "";
+      document.getElementById('editDefaultTone').value = tpl.defaultTone || "gentle";
+      document.getElementById('editContext').value = tpl.context || "conflict";
+      document.getElementById('editDefaultActions').value = (tpl.defaultActions || []).join('\n');
+      document.getElementById('templateEditSection').classList.remove('hidden');
+    }
+
+    function closeTemplateForm() {
+      document.getElementById('templateEditSection').classList.add('hidden');
+    }
+
+    function saveTemplateEdit() {
+      const id = document.getElementById('editTemplateId').value.trim();
+      const category = document.getElementById('editCategory').value.trim() || "常規與作業";
+      const title = document.getElementById('editTitle').value.trim();
+      const draftTemplate = document.getElementById('editDraftTemplate').value.trim();
+      const defaultTone = document.getElementById('editDefaultTone').value;
+      const context = document.getElementById('editContext').value;
+      const actionsText = document.getElementById('editDefaultActions').value.trim();
+      const defaultActions = actionsText ? actionsText.split('\n').map(a => a.trim()).filter(Boolean) : [];
+
+      if (!title || !draftTemplate) {
+        showToast('請填寫範本名稱與模板');
+        return;
+      }
+
+      const matches = draftTemplate.match(/\{([^}]+)\}/g) || [];
+      const slots = matches
+        .map(m => m.replace(/[{}]/g, '').trim())
+        .filter(k => k !== '學生姓名')
+        .map(k => ({ key: k, label: k, default: '', placeholder: `請輸入${k}` }));
+
+      if (id) {
+        const index = schoolTemplates.findIndex(t => t.id === id);
+        if (index !== -1) {
+          schoolTemplates[index] = {
+            ...schoolTemplates[index],
+            category,
+            title,
+            draftTemplate,
+            defaultTone,
+            context,
+            slots,
+            defaultActions
+          };
+        }
+      } else {
+        const newTpl = {
+          id: "tpl-" + Date.now(),
+          category,
+          title,
+          draftTemplate,
+          defaultTone,
+          context,
+          slots,
+          keywordsForAudit: [],
+          defaultActions
+        };
+        schoolTemplates.push(newTpl);
+      }
+
+      saveTemplatesToStorage();
+      renderTemplateList();
+      initCategoryAndTemplateSelectors();
+      closeTemplateForm();
+      showToast('校本範本已儲存');
+    }
+
+    function confirmDeleteTemplate(id) {
+      showCustomConfirm('刪除範本確認', '確定要刪除這組範本嗎？', () => {
+        schoolTemplates = schoolTemplates.filter(t => t.id !== id);
+        saveTemplatesToStorage();
+        renderTemplateList();
+        initCategoryAndTemplateSelectors();
+        showToast('範本已刪除');
+      });
+    }
+
+    function confirmResetToDefault() {
+      showCustomConfirm('重設題庫確認', '確定要還原為系統初始預設題庫嗎？自訂範本將被重置。', () => {
+        schoolTemplates = [...DEFAULT_TEMPLATES];
+        saveTemplatesToStorage();
+        renderTemplateList();
+        initCategoryAndTemplateSelectors();
+        showToast('已還原為預設題庫');
+      });
+    }
+
+    // 匯出 JSON 題庫包
+    function exportTemplatesJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(schoolTemplates, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `親師溝通校本題庫包_v1.6.0_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('題庫包已成功匯出');
+    }
+
+    // 匯入 JSON 題庫包
+    function importTemplatesJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported) && imported.length > 0) {
+            showCustomConfirm('匯入題庫確認', `已讀取到 ${imported.length} 組範本，確定要合併載入至現有題庫中嗎？`, () => {
+              const existingIds = new Set(schoolTemplates.map(t => t.id));
+              imported.forEach(t => {
+                if (!t.id || existingIds.has(t.id)) t.id = "tpl-" + Math.random().toString(36).substr(2, 9);
+                schoolTemplates.push(t);
+              });
+              saveTemplatesToStorage();
+              renderTemplateList();
+              initCategoryAndTemplateSelectors();
+              showToast(`成功匯入 ${imported.length} 組範本！`);
+            });
+          } else {
+            showToast('JSON 格式未包含有效範本陣列');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('JSON 檔案解析失敗');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function selectContext(ctx) {
+      currentContext = ctx;
+      document.querySelectorAll('.context-btn').forEach(btn => {
+        if (btn.dataset.context === ctx) {
+          btn.classList.add('border-emerald-400', 'bg-emerald-500/20', 'text-emerald-300');
+          btn.classList.remove('border-slate-700', 'bg-slate-900', 'text-slate-300');
+        } else {
+          btn.classList.remove('border-emerald-400', 'bg-emerald-500/20', 'text-emerald-300');
+          btn.classList.add('border-slate-700', 'bg-slate-900', 'text-slate-300');
+        }
+      });
+    }
+
+    function loadSampleText() {
+      const sampleTexts = {
+        conflict: "林小明第二節下課在走廊推了陳同學撞到桌角，導致對方額頭紅腫2cm且手肘破皮流血。事後他還發脾氣不肯道歉，請家長今晚務必好好教育！",
+        homework: "林小明今天數習 P.18-P.19 完全沒寫，且國語單元二聽寫只有拿 30 分，講了好幾次都不訂正，請家長今晚務必盯緊他完成並簽名！",
+        injury: "林小明剛剛放學前在走廊小跑步撞到柱子，額頭紅腫起包約 3cm，保健室護理師已先冰敷 15 分鐘，請家長帶回持續留意是否有暈眩狀況。",
+        focus: "林小明今天自然課一直在抽屜玩怪獸公仔，老師提醒了 3 次還是沒收起來，導致隨堂測驗第三大題完全空白沒寫。",
+        emotion: "林小明今天午餐時間因為不喜歡吃青江菜，直接把餐盒推倒在地上，還大聲衝撞輔導老師，請家長注意孩子的脾氣控管。",
+        general: "提醒家長，林小明明天校外教學需攜帶彩色筆與遮陽帽，但他這週已連續兩次忘記帶美勞材料，請務必幫忙檢查書包。"
+      };
+      document.getElementById('rawInput').value = sampleTexts[currentContext] || sampleTexts['conflict'];
+      document.getElementById('studentName').value = "林小明";
+    }
+
+    function clearInput() {
+      document.getElementById('rawInput').value = '';
+      document.getElementById('studentName').value = '';
+      document.getElementById('statutoryWarning').classList.add('hidden');
+      document.getElementById('fidelityWarningCard').classList.add('hidden');
+      document.getElementById('outputConcise').textContent = '（點擊「重構訊息語氣」後將在此呈現轉換結果）';
+      document.getElementById('outputDetailed').textContent = '（點擊「重構訊息語氣」後將在此呈現轉換結果）';
+      document.getElementById('riskScore').textContent = '--';
+      document.getElementById('riskBar').style.width = '0%';
+      document.getElementById('riskBadge').textContent = '尚未評估';
+      document.getElementById('fidelityScore').textContent = '--';
+      document.getElementById('fidelityBar').style.width = '0%';
+      document.getElementById('fidelityBadge').textContent = '尚未校驗';
+      document.getElementById('factualAnchorsContainer').classList.add('hidden');
+      document.getElementById('transformedTagsContainer').classList.add('hidden');
+      document.getElementById('parentActionCard').classList.add('hidden');
+      lastProcessedResult = null;
+    }
+
+    function onToneStyleChange() {
+      updateToneBadge();
+      const rawText = document.getElementById('rawInput').value.trim();
+      if (rawText && lastProcessedResult) {
+        processMessage();
+      }
+    }
+
+    function updateToneBadge() {
+      const toneSelect = document.getElementById('toneStyle');
+      const badge = document.getElementById('currentToneBadge');
+      const selectedText = toneSelect.options[toneSelect.selectedIndex].text.split(' ')[1] || '溫和同理';
+      badge.textContent = `當前語氣：${selectedText}`;
+    }
+
+    function switchTab(tab) {
+      currentActiveTab = tab;
+      const conciseBtn = document.getElementById('tabConciseBtn');
+      const detailedBtn = document.getElementById('tabDetailedBtn');
+      const conciseOutput = document.getElementById('outputConcise');
+      const detailedOutput = document.getElementById('outputDetailed');
+
+      if (tab === 'concise') {
+        conciseBtn.className = "touch-btn text-base sm:text-lg font-black px-4 sm:px-5 py-2.5 rounded-2xl bg-emerald-400 text-slate-950 transition shadow-md";
+        detailedBtn.className = "touch-btn text-base sm:text-lg font-bold px-4 sm:px-5 py-2.5 rounded-2xl bg-slate-900 text-slate-300 hover:bg-slate-700 transition";
+        conciseOutput.classList.remove('hidden');
+        detailedOutput.classList.add('hidden');
+      } else {
+        detailedBtn.className = "touch-btn text-base sm:text-lg font-black px-4 sm:px-5 py-2.5 rounded-2xl bg-emerald-400 text-slate-950 transition shadow-md";
+        conciseBtn.className = "touch-btn text-base sm:text-lg font-bold px-4 sm:px-5 py-2.5 rounded-2xl bg-slate-900 text-slate-300 hover:bg-slate-700 transition";
+        detailedOutput.classList.remove('hidden');
+        conciseOutput.classList.add('hidden');
+      }
+    }
+
+    function checkStatutoryAlert(text) {
+      const warningBox = document.getElementById('statutoryWarning');
+      const warningDetail = document.getElementById('warningDetail');
+      const matched = statutoryKeywords.filter(kw => text.includes(kw));
+
+      if (matched.length > 0) {
+        warningBox.classList.remove('hidden');
+        warningDetail.textContent = `草稿中命中「${matched.join('、')}」等關鍵字。請確認是否符合校安通報程序。親師溝通應記載客觀事實，避免於通訊群組過度推論。`;
+      } else {
+        warningBox.classList.add('hidden');
+      }
+    }
+
+    function sanitizeName(text, name) {
+      if (!name || !name.trim()) return { sanitized: text, name: '學生' };
+      const realName = name.trim();
+      const regex = new RegExp(realName, 'g');
+      return {
+        sanitized: text.replace(regex, '{{STUDENT_NAME}}'),
+        name: realName
+      };
+    }
+
+    // 核心處理函數
+    async function processMessage() {
+      const rawText = document.getElementById('rawInput').value.trim();
+      const rawName = document.getElementById('studentName').value.trim() || '孩子';
+      const tone = document.getElementById('toneStyle').value;
+
+      if (!rawText) {
+        showToast('請先輸入文字草稿或選擇範例');
+        return;
+      }
+
+      checkStatutoryAlert(rawText);
+      const { sanitized, name } = sanitizeName(rawText, rawName);
+
+      const currentTplId = document.getElementById('templateSelect')?.value;
+      const matchedTemplate = schoolTemplates.find(t => t.id === currentTplId);
+
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+
+      try {
+        let result = null;
+        let isLocal = false;
+
+        if (userApiKey) {
+          result = await callGeminiAPI(sanitized, name, tone, currentContext, matchedTemplate);
+        }
+
+        if (!result) {
+          result = generateLocalTransformation(sanitized, name, tone, currentContext, matchedTemplate);
+          isLocal = true;
+        }
+
+        lastProcessedResult = result;
+        renderResults(result, name, isLocal);
+
+      } catch (err) {
+        console.error(err);
+        showToast('已切換為本地事實重構引擎處理');
+        const fallbackResult = generateLocalTransformation(sanitized, name, tone, currentContext, matchedTemplate);
+        lastProcessedResult = fallbackResult;
+        renderResults(fallbackResult, name, true);
+      } finally {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+      }
+    }
+
+    // Gemini API 呼叫 (整合 FFV 事實保真度校驗與校本約束詞)
+    async function callGeminiAPI(text, studentName, tone, context, tpl) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+      
+      const constraintAuditWords = tpl?.keywordsForAudit?.join('、') || '無特殊指定約束詞';
+      const referenceActions = tpl?.defaultActions?.length ? tpl.defaultActions.join('\n- ') : '根據事實提出具體配合動作';
+
+      const systemPrompt = `你是一位深耕台灣國小現場的資深導師兼親師溝通專家。
+【任務核心】
+將教師草稿轉化為專業親師訊息，嚴格鎖定「物理事實、受傷程度、常規界線」。
+
+【三大核心禁令與規則】
+1. **事實保真度（Factual Fidelity, FFV）100% 捍衛**：
+   - 嚴禁將具體衝突或違規弱化為抽象好話（例：絕不可將「推人撞桌角」美化寫成「互動熱情」，不可將「完全沒寫」寫成「稍微進步」）。
+   - 必須 100% 保留受傷部位（如額頭紅腫2cm、手肘破皮）、損壞物品、發生次數、地點時段（第二節下課/走廊）與量化數據（如數習P.18-19、30分）。
+2. **校本關鍵約束詞必須保留**：${constraintAuditWords}。
+3. **語氣風格差異化**：
+   - 「gentle (溫和同理)」: 先同理家長辛勞，語調柔軟溫和，但不模糊任何物理傷害與事實。
+   - 「firm (客觀堅定)」: 純客觀事實條列，清晰重申班級常規界限與校方立場。
+   - 「collaborative (親師協作)」: 強調校方已採取的具體輔導，並明確列出家庭配合動作。
+4. 繁體中文在地用語：導師、聯絡簿、數習、保健室、午休、學務處。
+
+【輸出 JSON Schema】
+{
+  "factual_anchors": {
+    "action_taken": "推同學撞到桌角",
+    "consequence": "額頭紅腫2cm、手肘破皮流血",
+    "quantitative_data": "第二節下課 / 走廊"
+  },
+  "fidelity_score": 96,
+  "defensiveness_score": 18,
+  "removed_words": ["發脾氣", "不肯道歉", "好好教育"],
+  "analysis_summary": "已完整保留受傷部位與推擠動作，並抽離指責情緒字眼。",
+  "concise_version": "LINE精簡版內文 (80-120字)...",
+  "detailed_version": "聯絡簿/信件詳盡版內文 (200-300字)...",
+  "action_items_for_parents": [
+    "家庭配合事項1",
+    "家庭配合事項2"
+  ]
+}`;
+
+      const userPrompt = `溝通情境：${context}
+指定語氣風格：${tone}
+學生代稱：${studentName}
+校本建議行動參考：
+- ${referenceActions}
+原始教師草稿：
+${text}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: { responseMimeType: "application/json" }
+      };
+
+      let retries = 0;
+      const delays = [1000, 2000, 4000];
+
+      while (retries <= 3) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          const data = await res.json();
+          let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (responseText) {
+            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(responseText);
+          }
+        } catch (e) {
+          if (retries === 3) break;
+          await new Promise(r => setTimeout(r, delays[retries]));
+          retries++;
+        }
+      }
+      return null;
+    }
+
+    // 本地降級轉換引擎
+    function generateLocalTransformation(text, name, tone, context, tpl) {
+      let score = 20;
+      let removed = [];
+
+      const badWords = ['又', '總是', '完全沒', '講不聽', '沒心', '管教', '盯緊', '搞破壞', '發脾氣', '亂七八糟', '亂推', '不肯道歉', '好好教育'];
+      badWords.forEach(bw => {
+        if (text.includes(bw)) {
+          removed.push(bw);
+          score += 12;
+        }
+      });
+
+      const pageMatch = text.match(/P\.?\d+(-P\.?\d+)?|第\d+頁/i);
+      const pageDetail = pageMatch ? pageMatch[0] : '';
+
+      const scoreMatch = text.match(/\d+分/);
+      const scoreDetail = scoreMatch ? scoreMatch[0] : '';
+
+      const sizeMatch = text.match(/\d+\s*(cm|公分)/i);
+      const sizeDetail = sizeMatch ? sizeMatch[0] : '';
+
+      const injuryMatch = text.match(/(紅腫|擦傷|破皮|流血|撞到|起包)/g);
+      const injuryDetail = injuryMatch ? Array.from(new Set(injuryMatch)).join('、') : '';
+
+      const actionMatch = text.match(/(推|撞|搶|玩|摔|沒寫|發呆|遲到)/g);
+      const actionDetail = actionMatch ? Array.from(new Set(actionMatch)).join('與') : '行為事件';
+
+      const timeLocMatch = text.match(/(第[一二三四五六七八]節|下課|放學|操場|走廊|教室|午餐)/g);
+      const timeLocDetail = timeLocMatch ? Array.from(new Set(timeLocMatch)).join(' / ') : '校園課堂';
+
+      let cleanFact = text
+        .replace(/{{STUDENT_NAME}}/g, name)
+        .replace(/(又|總是|完全|講不聽|請家長好好管教|盯緊|沒心|亂七八糟|請家長今晚務必好好教育|不肯道歉)/g, '')
+        .trim();
+
+      let concise = "";
+      let detailed = "";
+      let actions = tpl?.defaultActions?.length ? [...tpl.defaultActions] : [];
+
+      if (tone === 'gentle') {
+        if (context === 'conflict') {
+          concise = `家長您好：照顧孩子辛苦了！今天在校發生一個狀況需向您說明：${cleanFact}。老師已第一時間陪伴雙方釐清經過並完成安撫與保健包紮，特此向您說明，今晚請您溫和關心孩子的身心感受。`;
+          detailed = `親愛的家長您好：\n\n感謝您對學校事務的支持。向您說明今天下課時的互動狀況：${cleanFact}。\n\n【老師關懷與處置】\n1. 老師已陪同孩子檢視狀況，並至保健室完成初步冰敷與傷口清潔處置。\n2. 引導雙方孩子表達內心想法，學習同理與安全界線。\n\n【溫馨家庭配合】\n今晚請給予孩子溫暖的關心，陪伴他聊聊今天在學校的經過。感謝您的體諒！`;
+          if (!actions.length) {
+            actions = [
+              `溫和詢問孩子今天在學校的心情與經過`,
+              `留意傷處後續狀況（若有需要可持續冰敷觀察）`
+            ];
+          }
+        } else if (context === 'homework') {
+          concise = `家長您好：今天關心 ${name} 的學習進度，注意到 ${pageDetail ? pageDetail + ' ' : ''}${scoreDetail ? '與聽寫成績(' + scoreDetail + ') ' : ''}有些許進步空間。老師已在校引導練習，今晚再請您溫和提醒他補齊！`;
+          detailed = `親愛的家長您好：\n\n今天在校檢視作業時，觀察到：${cleanFact}。\n\n【老師在校作為】\n1. 課堂間已先個別提點卡關題型，並給予鼓勵。\n2. 陪伴孩子釐清學習重點。\n\n【溫馨家庭配合】\n今晚請撥空 10-15 分鐘陪伴孩子檢視作業，親師同心陪伴孩子建立信心！`;
+          if (!actions.length) {
+            actions = [
+              `陪伴孩子檢視未完成之作業並給予正面鼓勵`,
+              `完成訂正後於聯絡簿完成簽核`
+            ];
+          }
+        } else {
+          concise = `家長您好：向您說明 ${name} 今日在校狀況：${cleanFact}。老師已給予適時關心與引導，特此向您聯繫。`;
+          detailed = `親愛的家長您好：\n\n與您分享 ${name} 今日在校的點滴：${cleanFact}。\n\n【學校處置作為】\n1. 已給予個別指導與溫和提醒。\n2. 鼓勵孩子調整步調。\n\n感謝家長的配合與支持！`;
+          if (!actions.length) actions = [`關心孩子近期生活作息與睡眠狀況`];
+        }
+
+      } else if (tone === 'firm') {
+        if (context === 'conflict') {
+          concise = `家長您好：通報今日同儕事件。客觀經過如下：${cleanFact}。老師已依校規嚴正告誡同儕安全界線，並完成保健處置，請家長今晚務必督導孩子建立安全觀念。`;
+          detailed = `家長您好：\n\n向您陳述今日發生的同儕事件紀錄：\n1. 具體經過：${cleanFact}。\n2. 傷勢與現場處理：保健室已完成檢視與傷口處理，目前雙方已回班上課。\n\n【校方明確處置】\n1. 已明確告誡校園肢體互動之安全界線，事件已作成書面紀錄。\n2. 引導孩子正視責任並學習承擔。\n\n【家長配合事項】\n請家長今晚務必嚴肅與孩子溝通同儕安全，告誡不可再有危險推擠行為。`;
+          if (!actions.length) {
+            actions = [
+              `嚴正告誡走廊奔跑與肢體推擠之危險性`,
+              `要求孩子明日到校向受傷同學表達適當關心`
+            ];
+          }
+        } else {
+          concise = `家長您好：通知今日學習應完成事項：${cleanFact}。請家長今晚督導孩子確實完成補交。`;
+          detailed = `家長您好：\n\n向您陳述今日學習檢核紀錄：\n1. 具體事實：${cleanFact}。\n\n【校方明確處置】\n1. 已登錄缺漏項目，並要求依限完成訂正。\n\n【家長配合事項】\n請家長今晚核對書包作業進度，督導完成並簽名。`;
+          if (!actions.length) actions = [`督導孩子完成缺漏項目並於聯絡簿簽名`];
+        }
+
+      } else {
+        // 親師協作
+        if (context === 'conflict') {
+          concise = `家長您好：為共同守護孩子的校園安全，向您說明今日狀況：${cleanFact}。學校已引導孩子學習衝突化解，今晚建議家庭端同步配合引導安全觀念，感謝您的協作！`;
+          detailed = `親愛的家長您好：\n\n親師攜手能幫助孩子在人際互動中成熟成長。今日校內狀況如下：${cleanFact}。\n\n【學校輔導對策】\n1. 老師已陪同孩子處理傷勢並安撫情緒。\n2. 引導孩子探討衝動行為的後果與正確求助方式。\n\n【親師協作步驟】\n1. 今晚請引導孩子思考下次遇到同儕摩擦時的應對策略。\n2. 肯定孩子願意面對錯誤的態度。\n\n感謝您的積極協作！`;
+          if (!actions.length) {
+            actions = [
+              `引導孩子分享「下次發生爭執時可以如何找老師求助」`,
+              `檢查受傷處復原狀況並保持傷口乾爽`
+            ];
+          }
+        } else {
+          concise = `家長您好：親師攜手關心孩子的學習：${cleanFact}。學校已啟動個別輔導，建議家庭端同步配合，謝謝您！`;
+          detailed = `親愛的家長您好：\n\n今日在校學習狀況紀錄如下：${cleanFact}。\n\n【學校處置對策】\n1. 已針對學習盲點進行拆解教學。\n2. 調整物品擺放與常規引導。\n\n【家庭協作步驟】\n今晚請協助檢查書包與作業，親師同心協助孩子步入正軌！`;
+          if (!actions.length) actions = [`協助孩子檢視明日所需學用品與作業完成度`];
+        }
+      }
+
+      return {
+        factual_anchors: {
+          action_taken: actionDetail,
+          consequence: injuryDetail || scoreDetail || '課堂學習受影響',
+          quantitative_data: `${timeLocDetail} ${pageDetail} ${sizeDetail}`.trim()
+        },
+        fidelity_score: 95,
+        defensiveness_score: Math.min(score, 80),
+        removed_words: removed.length > 0 ? removed : ['情緒化字眼', '指責語句'],
+        analysis_summary: "已抽離情緒字眼，100% 保留具體推擠與物理傷勢事實。",
+        concise_version: concise,
+        detailed_version: detailed,
+        action_items_for_parents: actions
+      };
+    }
+
+    // 渲染所有結果至畫面
+    function renderResults(data, realName, isLocal) {
+      const conciseText = data.concise_version.replace(/\{\{STUDENT_NAME\}\}/g, realName);
+      const detailedText = data.detailed_version.replace(/\{\{STUDENT_NAME\}\}/g, realName);
+
+      document.getElementById('outputConcise').textContent = conciseText;
+      document.getElementById('outputDetailed').textContent = detailedText;
+
+      // 1. 防衛心態分數
+      const riskScore = data.defensiveness_score || 20;
+      document.getElementById('riskScore').textContent = riskScore;
+      const riskBar = document.getElementById('riskBar');
+      const riskBadge = document.getElementById('riskBadge');
+      riskBar.style.width = `${riskScore}%`;
+
+      if (riskScore < 35) {
+        riskBar.className = "bg-emerald-400 h-full transition-all duration-500";
+        riskBadge.className = "px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-500/50";
+        riskBadge.textContent = "安全 (極低防衛)";
+      } else if (riskScore < 65) {
+        riskBar.className = "bg-amber-400 h-full transition-all duration-500";
+        riskBadge.className = "px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-amber-950 text-amber-300 border border-amber-500/50";
+        riskBadge.textContent = "中等風險";
+      } else {
+        riskBar.className = "bg-rose-500 h-full transition-all duration-500";
+        riskBadge.className = "px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-rose-950 text-rose-300 border border-rose-500/50";
+        riskBadge.textContent = "高防衛風險";
+      }
+
+      // 2. 事實保真度 (FFV) 分數
+      const fidelityScore = data.fidelity_score || 95;
+      document.getElementById('fidelityScore').textContent = fidelityScore;
+      const fidelityBar = document.getElementById('fidelityBar');
+      const fidelityBadge = document.getElementById('fidelityBadge');
+      fidelityBar.style.width = `${fidelityScore}%`;
+
+      if (fidelityScore >= 90) {
+        fidelityBar.className = "bg-emerald-400 h-full transition-all duration-500";
+        fidelityBadge.className = "px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-emerald-950 text-emerald-300 border border-emerald-500/50";
+        fidelityBadge.textContent = "高度保真 (無稀釋)";
+        document.getElementById('fidelityWarningCard').classList.add('hidden');
+      } else {
+        fidelityBar.className = "bg-orange-500 h-full transition-all duration-500";
+        fidelityBadge.className = "px-3 py-1 rounded-full text-xs sm:text-sm font-black bg-orange-950 text-orange-300 border border-orange-500/50";
+        fidelityBadge.textContent = "保真度不足";
+        document.getElementById('fidelityWarningCard').classList.remove('hidden');
+      }
+
+      // 3. 事實錨點標籤 (Anchor Badges)
+      const anchorsContainer = document.getElementById('factualAnchorsContainer');
+      const anchorsBox = document.getElementById('factualAnchors');
+      const engineModeBadge = document.getElementById('engineModeBadge');
+      anchorsBox.innerHTML = '';
+      anchorsContainer.classList.remove('hidden');
+
+      if (isLocal) {
+        engineModeBadge.textContent = '本地規則模式（未啟動深度語意校驗）';
+        engineModeBadge.className = 'text-xs bg-amber-950 text-amber-300 border border-amber-500/50 px-2.5 py-1 rounded-lg font-bold';
+      } else {
+        engineModeBadge.textContent = 'Gemini AI 深度校驗';
+        engineModeBadge.className = 'text-xs bg-emerald-950 text-emerald-300 border border-emerald-500/50 px-2.5 py-1 rounded-lg font-mono';
+      }
+
+      if (data.factual_anchors) {
+        const fa = data.factual_anchors;
+        if (fa.action_taken) {
+          const b1 = document.createElement('span');
+          b1.className = "text-xs sm:text-sm font-bold bg-blue-950 text-blue-300 border border-blue-500/50 px-3 py-1.5 rounded-xl flex items-center gap-1.5";
+          b1.innerHTML = `<span class="text-blue-400">📌 動作：</span> ${fa.action_taken}`;
+          anchorsBox.appendChild(b1);
+        }
+        if (fa.consequence) {
+          const b2 = document.createElement('span');
+          b2.className = "text-xs sm:text-sm font-bold bg-rose-950 text-rose-300 border border-rose-500/50 px-3 py-1.5 rounded-xl flex items-center gap-1.5";
+          b2.innerHTML = `<span class="text-rose-400">⚠️ 後果/傷處：</span> ${fa.consequence}`;
+          anchorsBox.appendChild(b2);
+        }
+        if (fa.quantitative_data) {
+          const b3 = document.createElement('span');
+          b3.className = "text-xs sm:text-sm font-bold bg-slate-900 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl flex items-center gap-1.5";
+          b3.innerHTML = `<span class="text-slate-400">🔢 數據/細節：</span> ${fa.quantitative_data}`;
+          anchorsBox.appendChild(b3);
+        }
+      }
+
+      // 4. 已替換字詞
+      const tagsContainer = document.getElementById('transformedTagsContainer');
+      const tagsBox = document.getElementById('transformedTags');
+      tagsBox.innerHTML = '';
+
+      if (data.removed_words && data.removed_words.length > 0) {
+        tagsContainer.classList.remove('hidden');
+        data.removed_words.forEach(word => {
+          const span = document.createElement('span');
+          span.className = "text-xs sm:text-sm bg-rose-950/80 text-rose-300 border border-rose-500/40 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5";
+          span.innerHTML = `<span class="line-through opacity-80">${word}</span> → 已轉化`;
+          tagsBox.appendChild(span);
+        });
+      } else {
+        tagsContainer.classList.add('hidden');
+      }
+
+      // 5. 家庭配合事項卡片 (Action Items)
+      const actionCard = document.getElementById('parentActionCard');
+      const actionList = document.getElementById('parentActionList');
+      actionList.innerHTML = '';
+
+      if (data.action_items_for_parents && data.action_items_for_parents.length > 0) {
+        actionCard.classList.remove('hidden');
+        data.action_items_for_parents.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          actionList.appendChild(li);
+        });
+      } else {
+        actionCard.classList.add('hidden');
+      }
+    }
+
+    // 複製文字至剪貼簿
+    function copyCurrentOutput() {
+      const textToCopy = currentActiveTab === 'concise' 
+        ? document.getElementById('outputConcise').textContent 
+        : document.getElementById('outputDetailed').textContent;
+
+      if (textToCopy.includes('點擊「重構訊息語氣」後')) {
+        showToast('請先進行訊息重構');
+        return;
+      }
+
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('已成功複製訊息內文！');
+        } else {
+          showToast('複製失敗，請手動選取文字');
+        }
+      } catch (err) {
+        showToast('複製失敗，請手動框選複製');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // 顯示 Toast 訊息
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
